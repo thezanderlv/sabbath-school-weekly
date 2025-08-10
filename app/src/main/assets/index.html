@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sabbath School – Weekly Grabber (v3 FIXED)</title>
+<style>
+  :root { --bg:#0b0c10; --panel:#16181d; --text:#e6e6e6; --muted:#9aa3ad; --accent:#66fcf1; --accent2:#45a29e; }
+  html,body{height:100%;}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif;background:#0b0c10;color:#e6e6e6}
+  .wrap{max-width:1000px;margin:0 auto;padding:24px;}
+  h1{font-size:1.5rem;margin:0 0 12px 0}
+  .card{background:#16181d;border-radius:16px;box-shadow:0 10px 24px rgba(0,0,0,.35);padding:16px;margin:12px 0;}
+  label{display:block;margin:8px 0 4px 0;color:#9aa3ad;font-size:.9rem}
+  input,button,textarea,select{width:100%;padding:12px;border-radius:12px;border:1px solid #2a2f39;background:#0f1116;color:#e6e6e6}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:#45a29e;box-shadow:0 0 0 3px rgba(102,252,241,.15)}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+  .btn{cursor:pointer;background:linear-gradient(135deg,#66fcf1,#45a29e);border:0;color:#061014;font-weight:700}
+  .btn.secondary{background:#1f2530;color:#e6e6e6;border:1px solid #2f3744}
+  .muted{color:#9aa3ad}
+  .small{font-size:.85rem}
+  .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  pre{white-space:pre-wrap;background:#0f1116;border:1px solid #2a2f39;border-radius:12px;padding:20px;max-height:52vh;overflow:auto;line-height:1.7}
+  .sep{height:18px}
+</style>
+<script>
+/* GLOBAL FUNCTIONS — no arrow funcs, simple handlers, plus onload init */
+function $(id){ return document.getElementById(id); }
+function init(){ var s=$('status'); if(s){ s.textContent='Ready ✅ (JS loaded)'; } }
+function setStatus(msg){ $('status').textContent = msg; }
+function pad2(n){ n=parseInt(n,10)||0; return n<10? '0'+n : ''+n; }
+function stripTime(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+function shiftWeeks(dt,w){ var d=new Date(dt); d.setDate(d.getDate()+w*7); return d; }
+function currentQuarterStr(dt){ var m=(dt||new Date()).getMonth(); var q=(m<=2)?1:(m<=5)?2:(m<=8)?3:4; var y=(dt||new Date()).getFullYear(); return y+'-'+pad2(q); }
+function quarterStartMonth(dt){ var m=dt.getMonth(); if(m<=2)return 0; if(m<=5)return 3; if(m<=8)return 6; return 9; }
+function firstSabbathOfQuarter(dt){ var y=dt.getFullYear(); var m=quarterStartMonth(dt); var d=new Date(y,m,1); while(d.getDay()!==6){ d.setDate(d.getDate()+1);} return d; }
+function weekOfQuarter(target){ var start=firstSabbathOfQuarter(target); var ms=86400000; var diff=Math.floor((stripTime(target)-stripTime(start))/ms); var wk=Math.floor(diff/7)+1; if(wk<1)wk=1; if(wk>13)wk=13; return wk; }
+
+function fetchText(url){
+  return fetch(url,{cache:'no-store'}).then(function(r){
+    if(!r.ok) throw new Error('HTTP '+r.status+' for '+url);
+    return r.text();
+  });
+}
+function convertDatesToUS(md){
+  return md.replace(/\b([0-3]?\d)\/([01]?\d)\/(20\d{2})\b/g,function(m,d,mo,y){return pad2(mo)+'/'+pad2(d)+'/'+y;});
+}
+var BOOK_MAP={"Gen.":"Genesis","Gen":"Genesis","Genesis":"Genesis","Exod.":"Exodus","Exod":"Exodus","Ex":"Exodus","Exodus":"Exodus","Lev.":"Leviticus","Lev":"Leviticus","Leviticus":"Leviticus","Num.":"Numbers","Num":"Numbers","Numbers":"Numbers","Deut.":"Deuteronomy","Deut":"Deuteronomy","Dt":"Deuteronomy","Deuteronomy":"Deuteronomy","Josh.":"Joshua","Josh":"Joshua","Joshua":"Joshua","Judg.":"Judges","Judg":"Judges","Judges":"Judges","Ruth":"Ruth","1 Sam.":"1 Samuel","2 Sam.":"2 Samuel","1 Kings":"1 Kings","2 Kings":"2 Kings","1 Chron.":"1 Chronicles","2 Chron.":"2 Chronicles","Ezra":"Ezra","Neh.":"Nehemiah","Esther":"Esther","Job":"Job","Ps.":"Psalms","Ps":"Psalms","Psalms":"Psalms","Prov.":"Proverbs","Prov":"Proverbs","Proverbs":"Proverbs","Eccl.":"Ecclesiastes","Eccl":"Ecclesiastes","Ecclesiastes":"Ecclesiastes","Song":"Song of Solomon","Song of Solomon":"Song of Solomon","Cant.":"Song of Solomon","Isa.":"Isaiah","Isa":"Isaiah","Isaiah":"Isaiah","Jer.":"Jeremiah","Jer":"Jeremiah","Jeremiah":"Jeremiah","Lam.":"Lamentations","Ezek.":"Ezekiel","Ezek":"Ezekiel","Dan.":"Daniel","Dan":"Daniel","Hos.":"Hosea","Hos":"Hosea","Joel":"Joel","Amos":"Amos","Obad.":"Obadiah","Obad":"Obadiah","Jonah":"Jonah","Mic.":"Micah","Mic":"Micah","Nah.":"Nahum","Hab.":"Habakkuk","Zeph.":"Zephaniah","Hag.":"Haggai","Zech.":"Zechariah","Mal.":"Malachi","Matt.":"Matthew","Matt":"Matthew","Mt":"Matthew","Matthew":"Matthew","Mark":"Mark","Luke":"Luke","John":"John","Acts":"Acts","Rom.":"Romans","Rom":"Romans","Romans":"Romans","1 Cor.":"1 Corinthians","2 Cor.":"2 Corinthians","Gal.":"Galatians","Eph.":"Ephesians","Phil.":"Philippians","Col.":"Colossians","1 Thess.":"1 Thessalonians","2 Thess.":"2 Thessalonians","1 Tim.":"1 Timothy","2 Tim.":"2 Timothy","Titus":"Titus","Philem.":"Philemon","Philemon":"Philemon","Heb.":"Hebrews","Heb":"Hebrews","James":"James","1 Pet.":"1 Peter","2 Pet.":"2 Peter","1 John":"1 John","2 John":"2 John","3 John":"3 John","Jude":"Jude","Rev.":"Revelation","Rev":"Revelation","Revelation":"Revelation"};
+function splitRefs(md){
+  var refs={}, norm=md.replace(/[–—]/g,'-'), rg=/\b((?:[1-3]\s)?[A-Z][a-zA-Z\.]+)\s+(\d{1,3}):(\d{1,3})(?:-(\d{1,3})(?::(\d{1,3}))?)?/g, m;
+  while((m=rg.exec(norm))){ var book=BOOK_MAP[m[1].trim()]||m[1].trim(), ch1=m[2], v1=m[3], ch2=m[4]||null, v2=m[5]||null, ref;
+    if(ch2&&!v2){ref=book+' '+ch1+':'+v1+'-'+ch2;} else if(ch2&&v2){ref=book+' '+ch1+':'+v1+'-'+ch2+':'+v2;} else {ref=book+' '+ch1+':'+v1;}
+    refs[ref]=true; }
+  return Object.keys(refs);
+}
+function getSelectedVersion(){ var sel=$('bibleVersion').value; if(sel==='custom'){ var c=$('customVersion').value.trim()||'kjv'; return c; } return sel; }
+function fetchBible(ref){
+  var v=getSelectedVersion();
+  var url='https://bible-api.com/'+encodeURIComponent(ref)+'?translation='+encodeURIComponent(v);
+  return fetch(url,{cache:'no-store'}).then(function(r){ if(!r.ok) throw new Error('Bible lookup failed'); return r.json(); })
+    .then(function(data){ if(data && data.text){ var txt=data.text.replace(/\\n/g,'\n'); return data.reference+'\n'+txt.trim(); } return ''; })
+    .catch(function(){ return ''; });
+}
+function separatorLine(style){ if(style==='blank') return '\n\n'; if(style==='=====') return '\n\n=====\n\n'; if(style==='______') return '\n\n______\n\n'; return '\n\n---\n\n'; }
+function spacingBlock(level){ if(level==='max') return '\n\n\n'; if(level==='more') return '\n\n'; return '\n'; }
+function stripFrontMatter(md){
+  var m=md.match(/^---\s*[\r\n]+([\s\S]*?)\n---\s*[\r\n]*/); var title='', date='';
+  if(m){ var fm=m[1]; var t=fm.match(/\btitle\s*:\s*(.+)/i); if(t) title=t[1].trim(); var d=fm.match(/\bdate\s*:\s*(.+)/i); if(d) date=d[1].trim(); md=md.slice(m[0].length); }
+  return { title:title, date:date, body:md };
+}
+function buildDayBlock(title, content, includeVerses, sepStyle, spaceLevel){
+  var sep=separatorLine(sepStyle), space=spacingBlock(spaceLevel);
+  content=content.replace(/\\n/g,'\n'); // literal \n to real
+  var parts=stripFrontMatter(content);
+  var clean=convertDatesToUS(parts.body.trim());
+  var header=sep+'## '+title+space;
+  if(parts.title||parts.date){ var nice=[]; if(parts.title) nice.push('**'+parts.title.replace(/^["']|["']$/g,'')+'**'); if(parts.date) nice.push(parts.date); header+=nice.join('  \n')+space; }
+  var md=header+clean+space;
+  if(includeVerses){
+    var refs=splitRefs(clean);
+    if(refs.length){
+      md+='> ### Bible Verses ('+getSelectedVersion().toUpperCase()+')'+space;
+      return refs.reduce(function(p,ref){ return p.then(function(acc){ return fetchBible(ref).then(function(txt){ if(txt){ acc+='\n> '+txt.replace(/\n/g,'\n> ')+space; } return acc; }); }); }, Promise.resolve(md)).then(function(acc){ return acc+space; });
+    }
+  }
+  return Promise.resolve(md);
+}
+function fetchWeek(lang, quarter, week, suffix, includeVerses, sepStyle, spaceLevel){
+  var q=quarter+(suffix?suffix.trim():''); var sep=separatorLine(sepStyle), space=spacingBlock(spaceLevel);
+  var header='# Sabbath School – Week '+parseInt(week,10)+space+'**Quarter:** '+q+space+'**Language:** '+lang+space;
+  var chain=Promise.resolve(header), names=['','Sabbath','Sunday','Monday','Tuesday','Wednesday','Thursday','Friday'];
+  for(var d=1; d<=7; d++){
+    (function(day){
+      var dd=pad2(day);
+      var url='https://raw.githubusercontent.com/Adventech/sabbath-school-lessons/stage/src/'+encodeURIComponent(lang)+'/'+encodeURIComponent(q)+'/'+pad2(week)+'/'+dd+'.md';
+      chain=chain.then(function(acc){
+        return fetchText(url).then(function(text){ setStatus('Fetched '+dd+'.md ✓'); return buildDayBlock(names[day]+' ('+dd+'.md)', text, includeVerses, sepStyle, spaceLevel).then(function(block){ return acc+block; }); })
+          .catch(function(){ setStatus('Skipped '+dd+'.md (not found)'); return acc+sep+'## '+names[day]+' ('+dd+'.md)'+space+'*Not found at*\n'+url+space; });
+      });
+    })(d);
+  }
+  return chain.then(function(result){ result=result.replace(/\n{4,}/g,'\n\n\n'); return result.trim()+space; });
+}
+function autoFill(which){
+  var base=new Date(); var target=(which==='last')?shiftWeeks(base,-1):base; var quarter=currentQuarterStr(target); var week=weekOfQuarter(target); $('quarter').value=quarter; $('week').value=week; return {quarter:quarter,week:week};
+}
+function autoLastWeek(){ setStatus('Detecting last week…'); var vals=autoFill('last'); fetchNow(vals.quarter, vals.week); }
+function autoThisWeek(){ setStatus('Detecting this week…'); var vals=autoFill('this'); fetchNow(vals.quarter, vals.week); }
+function fetchManual(){ var q=$('quarter').value.trim(), w=$('week').value.trim(); if(!q||!w){ alert('Fill in quarter and week or use Auto.'); return; } fetchNow(q,w); }
+function fetchNow(q,w){
+  var lang=$('lang').value.trim()||'en', suffix=$('suffix').value.trim(), includeVerses=$('includeVerses').checked, sep=$('separator').value, space=$('spacing').value;
+  setStatus('Loading '+q+' week '+w+'…');
+  fetchWeek(lang,q,w,suffix,includeVerses,sep,space).then(function(text){ $('output').value=text; $('preview').textContent=text; $('copy').disabled=false; $('download').disabled=false; setStatus('Done.'); })
+  .catch(function(e){ setStatus('Error: '+e.message); });
+}
+function copyAll(){ try{ navigator.clipboard.writeText($('output').value).then(function(){ setStatus('Copied to clipboard!'); }).catch(function(){ fallbackCopy(); }); }catch(e){ fallbackCopy(); } }
+function fallbackCopy(){ $('output').select(); document.execCommand('copy'); setStatus('Copied via fallback.'); }
+function downloadTxt(){
+  var lang=$('lang').value.trim()||'en', q=$('quarter').value.trim()||currentQuarterStr(new Date()), w=pad2($('week').value.trim()||'1'), suffix=$('suffix').value.trim(), version=getSelectedVersion(), nameQ=q+(suffix?suffix:'');
+  var blob=new Blob([$(`output`).value],{type:'text/plain'}); var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='sabbath-school_'+lang+'_'+nameQ+'_week-'+w+'_'+version+'.txt'; a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); }, 2000);
+}
+function testJS(){ setStatus('✅ JavaScript is running. Try Auto: This Week.'); }
+</script>
+</head>
+<body onload="init()">
+<div class="wrap">
+  <h1>Sabbath School – Weekly Grabber <span class="small muted">v3 FIXED</span></h1>
+
+  <div class="card">
+    <div class="row3">
+      <div><label>Language</label><input id="lang" value="en"></div>
+      <div><label>Quarter (YYYY-QQ)</label><input id="quarter" placeholder="YYYY-QQ"></div>
+      <div><label>Week (1–13)</label><input id="week" type="number" min="1" max="13"></div>
+    </div>
+
+    <div class="row3">
+      <div><label>Quarter suffix (optional)</label><input id="suffix" placeholder="-er (optional)"></div>
+      <div><label>Bible Version</label><select id="bibleVersion"><option value="kjv" selected>KJV</option><option value="asv">ASV</option><option value="web">WEB</option><option value="custom">Custom…</option></select></div>
+      <div><label>Custom version code</label><input id="customVersion" placeholder="e.g., kjv"></div>
+    </div>
+
+    <div class="row3">
+      <div><label>Spacing level</label><select id="spacing"><option value="normal">Normal</option><option value="more" selected>More</option><option value="max">Max</option></select></div>
+      <div><label>Section separator</label><select id="separator"><option value="---">--- (markdown rule)</option><option value="=====" selected>=====</option><option value="______">______</option><option value="blank">Blank lines only</option></select></div>
+      <div><label><input id="includeVerses" type="checkbox" checked> Include verse text under each day</label></div>
+    </div>
+
+    <div class="actions">
+      <button class="btn secondary" onclick="testJS()">Test JS</button>
+      <button class="btn" onclick="autoLastWeek()">Auto: Last Week</button>
+      <button class="btn" onclick="autoThisWeek()">Auto: This Week</button>
+      <button class="btn secondary" onclick="fetchManual()">Fetch with current fields</button>
+      <button id="copy" class="btn secondary" onclick="copyAll()" disabled>Copy all (Markdown)</button>
+      <button id="download" class="btn secondary" onclick="downloadTxt()" disabled>Download .txt</button>
+    </div>
+    <p id="status" class="small muted">Loading…</p>
+  </div>
+
+  <div class="card">
+    <label>Combined weekly text (Markdown)</label>
+    <textarea id="output" rows="22" spellcheck="false" placeholder="Your weekly content will appear here…"></textarea>
+    <div class="sep"></div>
+    <div class="small muted">Preview:</div>
+    <pre id="preview"></pre>
+  </div>
+</div>
+</body>
+</html>
