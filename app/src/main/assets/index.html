@@ -23,11 +23,13 @@
   .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
   pre{white-space:pre-wrap;background:#0f1116;border:1px solid #2a2f39;border-radius:12px;padding:20px;max-height:52vh;overflow:auto;line-height:1.7}
   .sep{height:18px}
+  #credit-container{margin-top:24px;text-align:center}
+  #credit-container .btn{width:auto}
 </style>
 <script>
 /* GLOBAL FUNCTIONS — no arrow funcs, simple handlers, plus onload init */
 function $(id){ return document.getElementById(id); }
-function init(){ var s=$('status'); if(s){ s.textContent='Ready ✅ (JS loaded)'; } }
+function init(){ var s=$('status'); if(s){ s.textContent='Ready ✅ (JS loaded)'; } ensureCredit(); }
 function setStatus(msg){ $('status').textContent = msg; }
 function pad2(n){ n=parseInt(n,10)||0; return n<10? '0'+n : ''+n; }
 function stripTime(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
@@ -121,6 +123,16 @@ function downloadTxt(){
   var blob=new Blob([$(`output`).value],{type:'text/plain'}); var a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='sabbath-school_'+lang+'_'+nameQ+'_week-'+w+'_'+version+'.txt'; a.click(); setTimeout(function(){ URL.revokeObjectURL(a.href); }, 2000);
 }
 function testJS(){ setStatus('✅ JavaScript is running. Try Auto: This Week.'); }
+function ensureCredit(){
+  if(!document.getElementById('zuntopia-credit')){
+    var div=document.createElement('div');
+    div.id='credit-container';
+    div.innerHTML='<button id="zuntopia-credit" class="btn secondary" onclick="window.open(\'https://zuntopia.com\', \'_blank\')">Created by zuntopia.com</button>';
+    var wrap=document.querySelector('.wrap');
+    if(wrap){ wrap.appendChild(div); }
+  }
+}
+new MutationObserver(ensureCredit).observe(document.body,{childList:true,subtree:true});
 </script>
 </head>
 <body onload="init()">
